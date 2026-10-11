@@ -1,0 +1,100 @@
+# Master Configuration: Statistical Arbitrage & Equity Market Neutral Strategy
+
+experiment:
+  id: "exp_baseline_v1"
+  description: "Baseline Cointegration EMN Walk-Forward with 5bps Slippage"
+  random_seed: 42
+  log_level: "INFO"
+
+data:
+  provider: "synthetic"  # "synthetic", "parquet", or "yahoo"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  sample_dir: "data/sample"
+  start_date: "2020-01-01"
+  end_date: "2023-12-31"
+  benchmark_symbol: "SPY"
+  cache_enabled: true
+
+universe:
+  min_price: 5.0
+  min_median_dollar_volume: 5000000.0  # $5M ADTV
+  max_missing_pct: 0.02                # Max 2% missing sessions
+  min_history_days: 252                # 1 trading year minimum
+  sector_constraint: true              # Pair must reside within same sector
+  symbols: []                          # Empty list implies dynamic universe selection
+
+research:
+  candidate_generation:
+    min_correlation: 0.50              # Computational pre-screening filter only
+    max_candidates_per_sector: 50
+    same_sector_only: true
+  
+  cointegration:
+    significance_level: 0.05
+    adf_regression: "c"                # 'c' for constant
+    adf_lag_selection: "aic"
+    adf_max_lags: 10
+    use_engle_granger: true
+    use_johansen: true
+    johansen_det_order: 0              # 0 for constant inside VECM
+    johansen_k_ar_diff: 1
+    fdr_correction: true
+    fdr_alpha: 0.10                    # 10% FDR bound via Benjamini-Hochberg
+
+  hurst:
+    max_hurst: 0.45                    # Must be < 0.5 to reflect mean-reversion
+    min_window: 126
+    method: "variance_time"            # Variance-Time scaling
+
+  half_life:
+    min_half_life: 2.0                 # Minimum 2 trading days (avoids microstructure bounce)
+    max_half_life: 63.0                # Maximum 3 trading months (63 days)
+
+  stability:
+    max_hedge_ratio_cv: 0.35           # Maximum coefficient of variation over sub-windows
+    check_chow_break: false
+    chow_significance: 0.01
+
+signals:
+  spread_lookback: 63                  # Lagged rolling window for mean and standard deviation
+  z_entry: 2.0                         # Open long/short spread at |Z| >= 2.0
+  z_exit: 0.0                          # Mean-reversion target exit at Z = 0
+  z_stop: 3.5                          # Statistical stop-loss at |Z| >= 3.5
+  max_holding_days: 30                 # Time stop: force exit after 30 sessions
+  envelope_multiplier: 2.0             # Bollinger envelope band width (k * sigma)
+  envelope_confirmation: true
+
+portfolio:
+  initial_capital: 1000000.0           # $1,000,000 baseline
+  max_active_pairs: 10
+  sizing_method: "inv_vol"             # "inv_vol" (volatility-budgeted) or "equal_weight"
+  max_capital_per_pair: 0.10           # Max 10% capital per pair
+  max_single_stock_weight: 0.15        # Max 15% aggregate notional per individual stock
+  max_sector_weight: 0.30              # Max 30% aggregate sector exposure
+  max_gross_exposure: 1.0              # Gross leverage limit (Longs + |Shorts|) / Equity
+  target_net_exposure: 0.0             # Strict market neutrality target
+  net_exposure_tolerance: 0.05         # Allowed drift |Net| <= 5%
+  beta_neutral: true                   # Beta-adjust pair leg allocations against benchmark
+
+execution:
+  fill_convention: "next_open"         # Execute at day t+1 Open upon day t Close signal
+  slippage_bps: 5.0                    # Non-negotiable baseline: 5 bps per traded side
+  commission_per_share: 0.001          # $0.001 per share
+  borrow_fee_annual_bps: 50.0          # 50 bps annual borrow cost on short notional
+  cash_interest_annual_bps: 200.0      # 200 bps risk-free cash yield
+  max_volume_pct: 0.01                 # Max 1% of trailing 20-day ADV per order
+
+backtest:
+  mode: "walk_forward"                 # "walk_forward" or "single_window"
+  formation_window_days: 252           # 1 year training/selection window
+  validation_window_days: 63           # 3 months validation
+  trading_window_days: 63              # 3 months out-of-sample forward trading
+  rebalance_frequency_days: 63         # Re-evaluate cointegration and refresh pair universe
+  annualization_factor: 252
+
+reporting:
+  output_dir: "reports/results"
+  generate_figures: true
+  generate_markdown: true
+  dpi: 300

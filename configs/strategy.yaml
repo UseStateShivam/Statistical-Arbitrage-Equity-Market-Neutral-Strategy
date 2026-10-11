@@ -1,0 +1,15 @@
+# Strategy & Signal Configuration
+spread_lookback: 63
+z_entry: 2.0
+z_exit: 0.0
+z_stop: 3.5
+max_holding_days: 30
+envelope_multiplier: 2.0
+envelope_confirmation: true
+min_correlation: 0.50
+cointegration_alpha: 0.05
+fdr_alpha: 0.10
+max_hurst: 0.45
+min_half_life: 2.0
+max_half_life: 63.0
+max_hedge_ratio_cv: 0.25

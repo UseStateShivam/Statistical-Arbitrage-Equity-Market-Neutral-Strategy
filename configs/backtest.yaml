@@ -1,0 +1,13 @@
+# Backtest & Execution Configuration
+mode: "walk_forward"
+formation_window_days: 252
+validation_window_days: 63
+trading_window_days: 63
+rebalance_frequency_days: 63
+fill_convention: "next_open"
+slippage_bps: 5.0
+commission_per_share: 0.001
+borrow_fee_annual_bps: 50.0
+cash_interest_annual_bps: 200.0
+max_volume_pct: 0.01
+annualization_factor: 252

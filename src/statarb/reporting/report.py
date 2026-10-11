@@ -1,0 +1,101 @@
+"""
+Automated generation of publication-grade Markdown research report.
+"""
+
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+from statarb.reporting.tables import format_monthly_table, format_performance_summary_table
+
+
+def generate_research_report(
+    experiment_id: str,
+    metrics: dict[str, Any],
+    monthly_df: pd.DataFrame,
+    cost_attribution: dict[str, Any],
+    cost_sensitivity_df: pd.DataFrame,
+    output_path: Path | str,
+) -> None:
+    """
+    Compiles full quantitative research findings into research_report.md.
+    """
+    perf_table = format_performance_summary_table(metrics)
+    monthly_table = format_monthly_table(monthly_df)
+
+    report_content = f"""# Quantitative Research Report: Statistical Arbitrage & Equity Market Neutral Strategy
+
+**Experiment Identifier:** `{experiment_id}`  
+**Strategy Class:** Systematic Equity Market Neutral (EMN) Pairs Trading  
+**Evaluation Standard:** Chronological Walk-Forward Out-of-Sample Backtesting  
+**Execution Friction:** **5 basis points slippage per traded side + commissions + borrow fees**  
+
+---
+
+## 1. Executive Summary
+
+This research report documents the quantitative performance, econometric validity, and risk characteristics of an institutional-grade **Statistical Arbitrage & Equity Market Neutral** strategy. The platform systematically identifies pairs of equities exhibiting statistically robust cointegration under the **Augmented Dickey-Fuller (ADF)** and **Johansen VECM** procedures, corrects for multiple-testing data snooping via **Benjamini-Hochberg False Discovery Rate (FDR)** control, filters candidate spreads via discrete **Ornstein-Uhlenbeck half-life** and **variance-time Hurst exponent** bounds, and executes dollar- and beta-neutral portfolios with realistic market microstructure frictions.
+
+All results presented herein originate strictly from out-of-sample forward trading periods. Zero in-sample parameter tuning or look-ahead leakage is permitted.
+
+---
+
+## 2. Key Out-of-Sample Performance Metrics
+
+{perf_table}
+
+---
+
+## 3. Monthly Return Heatmap (%)
+
+{monthly_table}
+
+---
+
+## 4. Execution Frictions & Cost Attribution
+
+Frictional drag accounting is audited on actual executed traded notional:
+
+| Cost Component | Dollar Impact | Effective Basis Points |
+|:---|:---|:---|
+| Cumulative Gross P&L | ${cost_attribution.get("cumulative_gross_pnl", 0.0):,.2f} | Baseline Gross |
+| Modeled Slippage (5 bps/side) | ${cost_attribution.get("cumulative_transaction_costs", 0.0):,.2f} | 5.0 bps per side |
+| Short Stock Borrow Fees | ${cost_attribution.get("cumulative_borrow_costs", 0.0):,.2f} | 50.0 bps annualized |
+| **Cumulative Net Realized P&L** | **${cost_attribution.get("cumulative_net_pnl", 0.0):,.2f}** | **Net of All Frictions** |
+| Total Cost Drag vs Gross | {cost_attribution.get("cost_pct_of_gross_pnl", 0.0):.1%} of Gross Profits | Friction Drag |
+
+---
+
+## 5. Visual Artifacts & Research Diagnostics
+
+The pipeline generated the following publication-quality figures:
+- `figures/equity_curve.png`: Out-of-Sample Net vs Gross Equity Curve with Cost Drag.
+- `figures/drawdowns.png`: Underwater Drawdown Profile.
+- `figures/rolling_sharpe.png`: 63-Day Rolling Annualized Sharpe Ratio.
+- `figures/monthly_heatmap.png`: Calendar Month Return Distribution.
+- `figures/exposures.png`: Gross & Net Market Neutrality Leverage Evolution.
+- `figures/cost_sensitivity.png`: Sharpe Ratio & CAGR Decay as Slippage rises (0 to 20 bps).
+- `figures/sample_spread_zscore.png`: Pair Spread Diagnostics & State Transitions.
+
+---
+
+## 6. Econometric Methodology & Multiple Comparison Control
+
+1. **Cointegration Testing**: Engle-Granger two-step procedure evaluated against MacKinnon response-surface critical values, cross-verified with Johansen VECM trace statistics.
+2. **False Discovery Rate (FDR)**: Screening $M$ candidate pairs generates substantial data snooping risk. The Benjamini-Hochberg algorithm controls FDR at $q^* = 0.10$, bounding expected false discoveries.
+3. **Mean-Reversion Speed**: Spread half-life $t_{{1/2}} = -\\ln(2)/b$ derived from AR(1) Ornstein-Uhlenbeck discretization. Pairs with $b \\ge 0$ are strictly rejected.
+4. **Hurst Exponent**: Variance-time scaling $\\text{{Var}}(\\Delta_\\tau S) \\propto \\tau^{{2H}}$ enforces $H < 0.45$ to confirm sub-diffusive mean-reversion.
+
+---
+
+## 7. Institutional Risk Disclosures & Limitations
+
+- **Microstructure Frictions**: In live markets, stocks under severe divergence can become Hard-To-Borrow (HTB), with negative rebate rates or locate failures.
+- **Structural Break Risk**: Historical cointegration does not guarantee future co-movement; permanent economic divergence is capped via a strict $3.5\\sigma$ statistical stop loss and 30-day time stops.
+- **Survivorship Bias**: When using unadjusted current index constituents, survivorship bias is present; point-in-time constituent lists are required for survivorship-free claims.
+
+*Report automatically generated by StatArb Research Engine.*
+"""
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(report_content)

@@ -1,0 +1,25 @@
+{
+  "experiment_id": "exp_baseline_v1",
+  "timestamp_utc": "2026-10-11T12:52:54.197369+00:00",
+  "git_commit": "NO_GIT_REPO",
+  "python_version": "3.11.16 (main, Sep  1 2026, 14:15:24) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "packages": {
+    "numpy": "2.4.6",
+    "pandas": "3.0.6",
+    "scipy": "1.17.1",
+    "statsmodels": "0.15.0"
+  },
+  "random_seed": 42,
+  "dataset": {
+    "rows": 21903,
+    "symbols": 21
+  },
+  "config_summary": {
+    "slippage_bps": 5.0,
+    "fill_convention": "next_open",
+    "formation_days": 252,
+    "trading_days": 63
+  },
+  "success": true
+}
