@@ -2,6 +2,8 @@
 Unit tests for data normalization, validation, and universe filtering.
 """
 
+from typing import cast
+
 import pandas as pd
 
 from statarb.data.normalization import normalize_ohlcv_dataframe
@@ -55,7 +57,7 @@ def test_universe_filter_filters_penny_stocks(app_config):
         }
     )
     u_filter = UniverseFilter(app_config.universe)
-    audit = u_filter.filter_universe(df, as_of_date=dates[-1])
+    audit = u_filter.filter_universe(df, as_of_date=cast(pd.Timestamp, dates[-1]))
     assert len(audit) == 1
     assert not audit[0].is_eligible
     assert audit[0].rejection_reason is not None
